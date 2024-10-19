@@ -1,109 +1,129 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
-namespace ScriptureMemorizationProgram
+namespace ScriptureMemorizer
 {
+    // Class to represent a word in the scripture
+    class Word
+    {
+        private string _text;
+        private bool _isHidden;
+
+        public Word(string text)
+        {
+            _text = text;
+            _isHidden = false;
+        }
+
+        public void Hide()
+        {
+            _isHidden = true;
+        }
+
+        public bool IsHidden()
+        {
+            return _isHidden;
+        }
+
+        public override string ToString()
+        {
+            return _isHidden ? "_____" : _text;
+        }
+    }
+
+    // Class to represent the scripture reference (e.g., "John 3:16")
+    class ScriptureReference
+    {
+        public string Book { get; private set; }
+        public string VerseStart { get; private set; }
+        public string VerseEnd { get; private set; }
+
+        public ScriptureReference(string book, string verseStart, string verseEnd = "")
+        {
+            Book = book;
+            VerseStart = verseStart;
+            VerseEnd = verseEnd;
+        }
+
+        public override string ToString()
+        {
+            return string.IsNullOrEmpty(VerseEnd) ? $"{Book} {VerseStart}" : $"{Book} {VerseStart}-{VerseEnd}";
+        }
+    }
+
+    // Class to represent the scripture itself
+    class Scripture
+    {
+        private ScriptureReference _reference;
+        private List<Word> _words;
+        private Random _random;
+
+        public Scripture(ScriptureReference reference, string text)
+        {
+            _reference = reference;
+            _words = text.Split(' ').Select(w => new Word(w)).ToList();
+            _random = new Random();
+        }
+
+        public void Display()
+        {
+            Console.Clear();
+            Console.WriteLine(_reference);
+            foreach (var word in _words)
+            {
+                Console.Write(word + " ");
+            }
+            Console.WriteLine("\n");
+        }
+
+        public void HideRandomWords(int count)
+        {
+            int wordsToHide = Math.Min(count, _words.Count(w => !w.IsHidden()));
+            int hiddenWords = 0;
+
+            while (hiddenWords < wordsToHide)
+            {
+                int index = _random.Next(_words.Count);
+                if (!_words[index].IsHidden())
+                {
+                    _words[index].Hide();
+                    hiddenWords++;
+                }
+            }
+        }
+
+        public bool AllWordsHidden()
+        {
+            return _words.All(w => w.IsHidden());
+        }
+    }
+
     class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Welcome to the Scripture Memorization Program!");
+            // Example scripture: "John 3:16"
+            var reference = new ScriptureReference("John", "3:16");
+            var scriptureText = "For God so loved the world that he gave his one and only Son, that whoever believes in him shall not perish but have eternal life.";
+            var scripture = new Scripture(reference, scriptureText);
 
-            
-            ScriptureManager manager = new ScriptureManager();
-
-            
-            manager.Display();
-
-            
-            Console.WriteLine("Press enter to hide a few words or type 'quit' to exit.");
-            string input = Console.ReadLine();
-
-            while (input != "quit")
-            {
-                
-                manager.HideRandomWords();
-
-                
-                Console.Clear();
-                manager.Display();
-
-                
-                Console.WriteLine("Press enter to hide a few more words or type 'quit' to exit.");
-                input = Console.ReadLine();
-            }
-        }
-    }
-
-    class ScriptureManager
-    {
-        private List<Scripture> scriptures;
-        private Random random;
-
-        public ScriptureManager()
-        {
-            scriptures = new List<Scripture>();
-            random = new Random();
-
-            scriptures.Add(new Scripture("3rd Nephi 11:11", "And behold, I am the light and the life of the world."));
-            scriptures.Add(new Scripture("Proverbs 3:5-6", "Trust in the Lord with all your heart, and do not lean on your own understanding. In all your ways acknowledge him, and he will make straight your paths."));
-        }
-
-        public void Display()
-        {
-            foreach (var scripture in scriptures)
+            // Main loop
+            while (!scripture.AllWordsHidden())
             {
                 scripture.Display();
-                Console.WriteLine();
-            }
-        }
+                Console.WriteLine("Press Enter to hide some words or type 'quit' to exit.");
+                string input = Console.ReadLine();
+                if (input.ToLower() == "quit")
+                    break;
 
-        public void HideRandomWords()
-        {
-            foreach (var scripture in scriptures)
-            {
-                scripture.HideRandomWords();
+                scripture.HideRandomWords(3);
             }
+
+            // End the program when all words are hidden
+            Console.Clear();
+            Console.WriteLine("All words are now hidden. Well done!");
         }
     }
-
-    class Scripture
-    {
-        private string reference;
-        private string text;
-        private List<string> words;
-        private Random random;
-
-        public Scripture(string reference, string text)
-        {
-            this.reference = reference;
-            this.text = text;
-            this.words = text.Split(' ').ToList();
-            this.random = new Random();
-        }
-
-        public void Display()
-        {
-            Console.WriteLine(reference);
-            Console.WriteLine(text);
-        }
-
-        public void HideRandomWords()
-        {
-            
-            int numWordsToHide = random.Next(1, words.Count);
-
-            
-            List<int> indices = Enumerable.Range(0, words.Count).OrderBy(x => random.Next()).Take(numWordsToHide).ToList();
-
-            
-            foreach (int index in indices)
-            {
-                words[index] = "";
-            }
-
-            
-            text = string.Join(" ", words);
-        }
-    }
+}
